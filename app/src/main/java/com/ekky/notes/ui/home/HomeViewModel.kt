@@ -10,10 +10,12 @@ import com.ekky.notes.domain.repository.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val repository: NoteRepository
+    private val repository: NoteRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     var notes = mutableStateOf<List<Note>>(emptyList())
@@ -25,7 +27,7 @@ class HomeViewModel @Inject constructor(
             isLoading.value = true
             errorMessage.value = ""
 
-            val token = TokenManager.getBearerToken()
+            val token = tokenManager.getBearerToken()
 
             val result = repository.getAllNotes(token)
 
@@ -42,7 +44,9 @@ class HomeViewModel @Inject constructor(
 
     fun deleteNote(id: String) {
         viewModelScope.launch {
-            val token = TokenManager.getBearerToken()
+            val rawToken = tokenManager.token.first()
+            val token = "Bearer $rawToken"
+
             val result = repository.deleteNote(token, id)
 
             result.onSuccess {

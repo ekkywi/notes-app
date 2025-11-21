@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AddEditViewModel @Inject constructor(
-    private val repository: NoteRepository
+    private val repository: NoteRepository,
+    private val tokenManager: TokenManager
 ) : ViewModel() {
 
     var title = mutableStateOf("")
@@ -27,15 +28,39 @@ class AddEditViewModel @Inject constructor(
     val saveEvent = _saveEvent.asSharedFlow()
 
     fun loadNote(noteId: String) {
-        if (noteId == "new") return
+        if (noteId == "new") {
+            currentNoteId = null
+            title.value = ""
+            description.value = ""
+            return
+        }
+
         currentNoteId = noteId
+
+        viewModelScope.launch {
+            isLoading.value = true
+
+            val token = tokenManager.getBearerToken()
+
+            val result = repository.getNoteById(token, noteId)
+
+            result.onSuccess { note ->
+                if (note != null) {
+                    title.value = note.title
+                    description.value = note.description
+                }
+            }.onFailure {
+                Log.e("AddEditVM", "Gagal load data: ${it.message}")
+            }
+            isLoading.value = false
+        }
     }
 
     fun saveNote() {
         viewModelScope.launch {
             isLoading.value = true
             try {
-                val token = TokenManager.getBearerToken()
+                val token = tokenManager.getBearerToken()
 
                 val result = if (currentNoteId == null) {
                     repository.createNote(token, title.value, description.value)

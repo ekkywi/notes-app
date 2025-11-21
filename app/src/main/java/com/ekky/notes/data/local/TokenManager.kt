@@ -1,9 +1,46 @@
 package com.ekky.notes.data.local
 
-object TokenManager {
-    var token: String? = null
+import android.content.Context
+import android.util.Log
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
-    fun getBearerToken(): String {
-        return "Bearer $token"
+private val Context.dataStore by preferencesDataStore("user_prefs")
+
+@Singleton
+class TokenManager @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
+    companion object {
+        private val TOKEN_KEY = stringPreferencesKey("jwt_token")
+    }
+
+    val token: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[TOKEN_KEY]
+    }
+
+    suspend fun saveToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[TOKEN_KEY] = token
+        }
+        Log.d("TokenManager", "Token berhasil disimpan ke Disk")
+    }
+
+    suspend fun clearToken() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(TOKEN_KEY)
+        }
+    }
+
+    suspend fun getBearerToken(): String {
+        val tokenValue = token.first()
+        return "Bearer $tokenValue"
     }
 }

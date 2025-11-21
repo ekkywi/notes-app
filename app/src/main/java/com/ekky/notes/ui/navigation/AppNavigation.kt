@@ -15,7 +15,9 @@ import com.ekky.notes.ui.add_edit.AddEditScreen
 import com.ekky.notes.ui.add_edit.AddEditViewModel
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    startDestination: String
+) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "login") {

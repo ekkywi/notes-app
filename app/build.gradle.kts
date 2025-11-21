@@ -71,4 +71,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
+    implementation(libs.androidx.core.splashscreen)
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 }

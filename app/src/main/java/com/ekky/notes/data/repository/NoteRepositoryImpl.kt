@@ -25,6 +25,22 @@ class NoteRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getNoteById(token: String, id: String): Result<Note?> {
+        return try {
+            val response = api.getNoteById(token, id)
+
+            if (response.isSuccessful) {
+                val noteDto = response.body()?.note
+                val domainNote = noteDto?.toDomain()
+                Result.success(domainNote)
+            } else {
+                Result.failure(Exception("Gagal mengambil catatan: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun createNote(token: String, title: String, description: String): Result<Unit> {
         return try {
             val request = CreateNoteRequest(title, description)

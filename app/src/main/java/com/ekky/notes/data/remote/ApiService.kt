@@ -7,10 +7,16 @@ import retrofit2.http.*
 interface ApiService {
 
     @POST("/notes-api/auth/login")
-    suspend fun  login(@Body request: AuthRequest): Response<AuthResponse>
+    suspend fun  login(@Body request: AuthRequestDto): Response<AuthResponse>
 
     @GET("/notes-api/notes")
     suspend fun getAllNotes(@Header("Authorization") token: String): Response<NotesResponseDto>
+
+    @GET("/notes-api/notes/{id}")
+    suspend fun getNoteById(
+        @Header("Authorization") token: String,
+        @Path("id") id: String
+    ): Response<SingleNoteResponseDto>
 
     @POST("/notes-api/notes")
     suspend fun createNote(
