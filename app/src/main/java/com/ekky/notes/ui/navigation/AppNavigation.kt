@@ -16,11 +16,14 @@ import com.ekky.notes.ui.add_edit.AddEditViewModel
 
 @Composable
 fun AppNavigation(
-    startDestination: String
+    startDestination: String // <-- Parameter diterima di sini (misal: "home")
 ) {
     val navController = rememberNavController()
 
-    NavHost(navController = navController, startDestination = "login") {
+    // --- PERBAIKAN DI SINI ---
+    // Jangan tulis string "login", tapi pakai variabel startDestination
+    NavHost(navController = navController, startDestination = startDestination) {
+        // -------------------------
 
         composable("login") {
             val viewModel: LoginViewModel = hiltViewModel()

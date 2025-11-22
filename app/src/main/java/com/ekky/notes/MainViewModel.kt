@@ -1,43 +1,47 @@
 package com.ekky.notes
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ekky.notes.data.local.TokenManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val tokenManager: TokenManager
 ) : ViewModel() {
 
-    // State untuk tujuan awal
-    private val _startDestination = mutableStateOf("login") // Default ke login
-    val startDestination: State<String> = _startDestination
+    // Kita gunakan StateFlow agar perubahan state thread-safe
+    // Awalnya null (Loading)
+    private val _startDestination = MutableStateFlow<String?>(null)
+    val startDestination = _startDestination.asStateFlow()
 
-    // State untuk Loading (PENTING!)
-    private val _isLoading = mutableStateOf(true)
-    val isLoading: State<Boolean> = _isLoading
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading = _isLoading.asStateFlow()
 
     init {
         viewModelScope.launch {
-            // 1. Ambil token dari DataStore
-            val token = tokenManager.token.first()
+            // Tambahkan delay kecil untuk memastikan DataStore siap
+            delay(200)
 
-            // 2. Tentukan tujuan berdasarkan token
+            val token = tokenManager.token.first()
+            Log.d("DEBUG_APP", "Token di MainViewModel: $token")
+
             if (!token.isNullOrEmpty()) {
                 _startDestination.value = "home"
+                Log.d("DEBUG_APP", "Set destination -> HOME")
             } else {
                 _startDestination.value = "login"
+                Log.d("DEBUG_APP", "Set destination -> LOGIN")
             }
 
-            // 3. Matikan loading (Sekarang UI boleh tampil)
             _isLoading.value = false
         }
     }

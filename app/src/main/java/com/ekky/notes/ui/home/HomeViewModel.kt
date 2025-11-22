@@ -10,7 +10,8 @@ import com.ekky.notes.domain.repository.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlinx.coroutines.flow.first
+import com.ekky.notes.ui.auth.LoginScreen
+
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -27,6 +28,7 @@ class HomeViewModel @Inject constructor(
             isLoading.value = true
             errorMessage.value = ""
 
+            // Cara Benar: Pakai Helper
             val token = tokenManager.getBearerToken()
 
             val result = repository.getAllNotes(token)
@@ -44,17 +46,26 @@ class HomeViewModel @Inject constructor(
 
     fun deleteNote(id: String) {
         viewModelScope.launch {
-            val rawToken = tokenManager.token.first()
-            val token = "Bearer $rawToken"
+            // --- PERBAIKAN DI SINI ---
+            // Menggunakan helper getBearerToken() agar konsisten & bersih
+            val token = tokenManager.getBearerToken()
+            // -------------------------
 
             val result = repository.deleteNote(token, id)
 
             result.onSuccess {
                 Log.d("HomeVM", "Deleted: $id")
-                fetchNotes()
+                fetchNotes() // Refresh data setelah hapus
             }.onFailure {
                 Log.e("HomeVM", "Delete failed: ${it.message}")
             }
+        }
+    }
+
+    fun logout (onLogoutSuccess: () -> Unit) {
+        viewModelScope.launch {
+            tokenManager.clearToken()
+            onLogoutSuccess()
         }
     }
 }

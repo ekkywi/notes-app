@@ -1,6 +1,7 @@
 package com.ekky.notes
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -8,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState // Import ini PENTING
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -23,23 +26,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // (Opsional) Install Splash Screen Native Android 12+
         installSplashScreen().setKeepOnScreenCondition {
+            // Tahan splash screen selama isLoading masih true
             mainViewModel.isLoading.value
         }
 
         setContent {
             NotesTheme {
-                // Ambil status loading
-                val isLoading = mainViewModel.isLoading.value
-                val startDestination = mainViewModel.startDestination.value
+                // Baca StateFlow sebagai State Compose
+                val isLoading by mainViewModel.isLoading.collectAsState()
+                val startDestination by mainViewModel.startDestination.collectAsState()
 
-                if (isLoading) {
-                    // Tampilkan Layar Loading jika DataStore belum siap
+                Log.d("DEBUG_APP", "UI Render: Loading=$isLoading, Dest=$startDestination")
+
+                if (isLoading || startDestination == null) {
+                    // Tampilkan layar kosong/loading sampai keputusan final
                     LoadingScreen()
                 } else {
-                    // Hanya masuk ke sini jika DataStore SUDAH SELESAI dibaca
-                    AppNavigation(startDestination = startDestination)
+                    // PENTING: Pakai startDestination!! (tanda seru ganda karena sudah pasti tidak null)
+                    AppNavigation(startDestination = startDestination!!)
                 }
             }
         }

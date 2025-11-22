@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ekky.notes.domain.model.Note
 
@@ -48,6 +50,15 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = { viewModel.fetchNotes() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                    IconButton(onClick =  {
+                        viewModel.logout {
+                            navController.navigate("login") {
+                                popUpTo
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.ExitToApp, contentDescription = "Logout", tint = Color.Red)
                     }
                 }
             )
