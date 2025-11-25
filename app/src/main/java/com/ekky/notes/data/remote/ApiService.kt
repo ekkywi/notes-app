@@ -9,6 +9,9 @@ interface ApiService {
     @POST("/notes-api/auth/login")
     suspend fun  login(@Body request: AuthRequestDto): Response<AuthResponse>
 
+    @POST("/notes-api/auth/register")
+    suspend fun register(@Body request: AuthRequestDto): Response<SingleNoteResponseDto>
+
     @GET("/notes-api/notes")
     suspend fun getAllNotes(@Header("Authorization") token: String): Response<NotesResponseDto>
 

@@ -4,7 +4,8 @@ import com.google.gson.annotations.SerializedName
 
 data class AuthRequestDto(
     val username: String,
-    val password: String
+    val password: String,
+    val email: String? = null
 )
 
 data class CreateNoteRequestDto(

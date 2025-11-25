@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -25,73 +24,63 @@ fun LoginScreen(
         }
     }
 
-    LoginContent(
-        username = viewModel.username.value,
-        password = viewModel.password.value,
-        loginResult = viewModel.loginResult.value,
-        onUsernameChange = { viewModel.username.value = it },
-        onPasswordChange = { viewModel.password.value = it },
-        onLoginClick = { viewModel.login() }
-    )
-}
+    val isLogin = viewModel.isLoginMode.value
 
-@Composable
-fun LoginContent(
-    username: String,
-    password: String,
-    loginResult: String,
-    onUsernameChange: (String) -> Unit,
-    onPasswordChange: (String) -> Unit,
-    onLoginClick: () -> Unit
-) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Notes App", style = MaterialTheme.typography.headlineMedium)
+        Text(
+            text = if (isLogin) "Login Note App" else "Daftar Akun Baru",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
         Spacer(modifier = Modifier.height(32.dp))
 
         OutlinedTextField(
-            value = username,
-            onValueChange = onUsernameChange,
+            value = viewModel.username.value,
+            onValueChange = { viewModel.username.value = it },
             label = { Text("Username") },
             modifier = Modifier.fillMaxWidth()
         )
+
         Spacer(modifier = Modifier.height(8.dp))
 
+        if (!isLogin) {
+            OutlinedTextField(
+                value = viewModel.email.value,
+                onValueChange = { viewModel.email.value = it },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
         OutlinedTextField(
-            value = password,
-            onValueChange = onPasswordChange,
+            value = viewModel.password.value,
+            onValueChange = { viewModel.password.value = it },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onLoginClick,
+            onClick = { viewModel.submit() },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("LOGIN")
+            Text(if (isLogin) "LOGIN" else "DAFTAR")
         }
+
         Spacer(modifier = Modifier.height(8.dp))
-        Text(text = loginResult)
+
+        TextButton(onClick = { viewModel.isLoginMode.value = !isLogin }) {
+            Text(if (isLogin) "Belum punya akun? Daftar" else "Sudah punya akun? Login")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = viewModel.loginResult.value)
     }
-
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun LoginScreenPreview() {
-    LoginContent(
-        username = "useraplikasi",
-        password = "useraplikasi",
-        loginResult = "",
-        onUsernameChange = {},
-        onPasswordChange = {},
-        onLoginClick = {}
-    )
 }

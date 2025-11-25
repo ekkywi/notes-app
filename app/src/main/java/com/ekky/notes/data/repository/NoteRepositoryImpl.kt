@@ -2,6 +2,7 @@ package com.ekky.notes.data.repository
 
 import com.ekky.notes.data.mapper.toDomain
 import com.ekky.notes.data.remote.ApiService
+import com.ekky.notes.data.remote.dto.AuthRequestDto
 import com.ekky.notes.data.remote.dto.CreateNoteRequest
 import com.ekky.notes.domain.model.Note
 import com.ekky.notes.domain.repository.NoteRepository
@@ -10,6 +11,20 @@ import javax.inject.Inject
 class NoteRepositoryImpl @Inject constructor(
     private val api: ApiService
 ) : NoteRepository {
+
+    override suspend fun register(username: String, email: String, password: String): Result<Unit> {
+        return try {
+            val request = AuthRequestDto(username = username, email = email, password = password)
+            val response = api.register(request)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Register Gagal: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     override suspend fun getAllNotes(token: String): Result<List<Note>> {
         return try {
