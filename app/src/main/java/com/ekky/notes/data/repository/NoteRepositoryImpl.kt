@@ -26,14 +26,20 @@ class NoteRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllNotes(token: String): Result<List<Note>> {
+    override suspend fun getAllNotes(token:String, search: String, page:Int): Result<List<Note>> {
         return try {
-            val response = api.getAllNotes(token)
+            val response = api.getAllNotes(
+                token = token,
+                search = search,
+                page = page,
+                limit = 10
+            )
+
             if (response.isSuccessful) {
-                val notes = response.body()?.notes?.map { it.toDomain() } ?: emptyList()
+                val notes = response.body()?.notes?.map{ it.toDomain() } ?: emptyList()
                 Result.success(notes)
             } else {
-                Result.failure(Exception("Gagal mengambil data: ${response.code()}"))
+                Result.failure(Exception("Gagal: ${response.code()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)

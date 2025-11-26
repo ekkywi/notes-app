@@ -13,7 +13,12 @@ interface ApiService {
     suspend fun register(@Body request: AuthRequestDto): Response<SingleNoteResponseDto>
 
     @GET("/notes-api/notes")
-    suspend fun getAllNotes(@Header("Authorization") token: String): Response<NotesResponseDto>
+    suspend fun getAllNotes(
+        @Header("Authorization",) token: String,
+        @Query("search") search: String? = null,
+        @Query("page") page: Int? = 1,
+        @Query("limit") limit: Int? = 10
+    ): Response<NotesResponseDto>
 
     @GET("/notes-api/notes/{id}")
     suspend fun getNoteById(

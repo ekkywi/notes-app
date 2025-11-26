@@ -4,11 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.ekky.notes.domain.model.Note
 
@@ -28,14 +29,15 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
-        viewModel.fetchNotes()
+        viewModel.fetchNotes(isLoadMore = false)
     }
 
     val notes = viewModel.notes.value
     val isLoading = viewModel.isLoading.value
     val errorMessage = viewModel.errorMessage.value
+    val searchQuery = viewModel.searchQuery.value
+    val endReached = viewModel.endReached.value
 
-    // State untuk dialog hapus
     var showDeleteDialog by remember { mutableStateOf(false) }
     var noteToDelete by remember { mutableStateOf<Note?>(null) }
 
@@ -51,10 +53,11 @@ fun HomeScreen(
                     IconButton(onClick = { viewModel.fetchNotes() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
-                    IconButton(onClick =  {
+
+                    IconButton(onClick = {
                         viewModel.logout {
                             navController.navigate("login") {
-                                popUpTo
+                                popUpTo(0)
                             }
                         }
                     }) {
@@ -72,62 +75,98 @@ fun HomeScreen(
             }
         }
     ) { paddingValues ->
-        Box(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (errorMessage.isNotEmpty()) {
-                Text(
-                    text = errorMessage,
-                    color = Color.Red,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else {
-                if (notes.isEmpty()) {
-                    Text("Belum ada catatan", modifier = Modifier.align(Alignment.Center))
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.onSearchQueryChange(it) },
+                label = { Text("Cari Catatan...") },
+                leadingIcon = { Icon(Icons.Default.Search, "Cari") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                singleLine = true
+            )
+
+            Box(modifier = Modifier.fillMaxSize()) {
+
+                if (notes.isEmpty() && isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } else if (errorMessage.isNotEmpty() && notes.isEmpty()) {
+                    Text(
+                        text = errorMessage,
+                        color = Color.Red,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 } else {
-                    LazyColumn(
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(notes) { note ->
-                            NoteItem(
-                                note = note,
-                                onClick = {
-                                    navController.navigate("add_edit_note/${note.id}")
-                                },
-                                onDelete = {
-                                    noteToDelete = note
-                                    showDeleteDialog = true
+                    if (notes.isEmpty()) {
+                        Text("Tidak ada catatan.", modifier = Modifier.align(Alignment.Center))
+                    } else {
+                        LazyColumn(
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(notes) { index, note ->
+
+                                if (index >= notes.size - 1 && !endReached && !isLoading) {
+                                    LaunchedEffect(Unit) {
+                                        viewModel.loadNextPage()
+                                    }
                                 }
-                            )
+
+                                NoteItem(
+                                    note = note,
+                                    onClick = {
+                                        navController.navigate("add_edit_note/${note.id}")
+                                    },
+                                    onDelete = {
+                                        noteToDelete = note
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
+
+                            if (isLoading && notes.isNotEmpty()) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             }
+        }
 
-            if (showDeleteDialog) {
-                AlertDialog(
-                    onDismissRequest = { showDeleteDialog = false },
-                    title = { Text("Hapus Catatan?") },
-                    text = { Text("Yakin ingin menghapus '${noteToDelete?.title}'?") },
-                    confirmButton = {
-                        Button(
-                            onClick = {
-                                noteToDelete?.let { viewModel.deleteNote(it.id) }
-                                showDeleteDialog = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
-                        ) { Text("Hapus") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
-                    }
-                )
-            }
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Hapus Catatan?") },
+                text = { Text("Yakin ingin menghapus '${noteToDelete?.title}'?") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            noteToDelete?.let { viewModel.deleteNote(it.id) }
+                            showDeleteDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    ) { Text("Hapus") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) { Text("Batal") }
+                }
+            )
         }
     }
 }

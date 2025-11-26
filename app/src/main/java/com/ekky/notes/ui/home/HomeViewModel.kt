@@ -10,8 +10,6 @@ import com.ekky.notes.domain.repository.NoteRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.ekky.notes.ui.auth.LoginScreen
-
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -23,46 +21,76 @@ class HomeViewModel @Inject constructor(
     var isLoading = mutableStateOf(false)
     var errorMessage = mutableStateOf("")
 
-    fun fetchNotes() {
+    var searchQuery = mutableStateOf("")
+    var endReached = mutableStateOf(false)
+    private var currentPage = 1
+    // ----------------------------
+
+    fun fetchNotes(isLoadMore: Boolean = false) {
         viewModelScope.launch {
-            isLoading.value = true
-            errorMessage.value = ""
+            if (isLoadMore && endReached.value) return@launch
+            if (!isLoadMore) isLoading.value = true
 
-            // Cara Benar: Pakai Helper
-            val token = tokenManager.getBearerToken()
+            try {
+                val token = tokenManager.getBearerToken()
 
-            val result = repository.getAllNotes(token)
+                if (!isLoadMore) {
+                    currentPage = 1
+                    endReached.value = false
+                }
 
-            result.onSuccess { data ->
-                notes.value = data
-            }.onFailure { error ->
-                errorMessage.value = error.message ?: "Gagal memuat data"
-                Log.e("HomeVM", "Error: ${error.message}")
+                val result = repository.getAllNotes(token, searchQuery.value, currentPage)
+
+                result.onSuccess { newNotes ->
+                    if (newNotes.size < 10) {
+                        endReached.value = true
+                    }
+
+                    if (isLoadMore) {
+                        notes.value = notes.value + newNotes
+                    } else {
+                        notes.value = newNotes
+                    }
+                    currentPage++
+                }.onFailure { error ->
+                    errorMessage.value = error.message ?: "Gagal memuat data"
+                    Log.e("HomeVM", "Error: ${error.message}")
+                }
+
+            } catch (e: Exception) {
+                errorMessage.value = "Error: ${e.message}"
+            } finally {
+                isLoading.value = false
             }
+        }
+    }
 
-            isLoading.value = false
+    fun onSearchQueryChange(newQuery: String) {
+        searchQuery.value = newQuery
+        fetchNotes(isLoadMore = false)
+    }
+
+    fun loadNextPage() {
+        if (!isLoading.value && !endReached.value) {
+            fetchNotes(isLoadMore = true)
         }
     }
 
     fun deleteNote(id: String) {
         viewModelScope.launch {
-            // --- PERBAIKAN DI SINI ---
-            // Menggunakan helper getBearerToken() agar konsisten & bersih
             val token = tokenManager.getBearerToken()
-            // -------------------------
-
             val result = repository.deleteNote(token, id)
 
             result.onSuccess {
                 Log.d("HomeVM", "Deleted: $id")
-                fetchNotes() // Refresh data setelah hapus
+                fetchNotes(isLoadMore = false)
             }.onFailure {
                 Log.e("HomeVM", "Delete failed: ${it.message}")
             }
         }
     }
 
-    fun logout (onLogoutSuccess: () -> Unit) {
+    fun logout(onLogoutSuccess: () -> Unit) {
         viewModelScope.launch {
             tokenManager.clearToken()
             onLogoutSuccess()
